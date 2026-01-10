@@ -197,32 +197,6 @@ You can override these values at runtime by passing the appropriate arguments to
 
 ---
 
-## Testing
-
-The repository includes a pytest suite. To run the tests:
-
-```shell script
-pytest -v
-```
-
-Make sure you have the test data files (JSON/JSONL) placed under `tests/data/` as described in the test documentation.
-
----
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. **Fork** the repository and create a feature branch.
-2. Write clear, well‑documented code. Add docstrings and type hints.
-3. Include unit tests for new functionality.
-4. Run the full test suite (`pytest`) and ensure linting passes (`pylint`, `flake8`).
-5. Submit a pull request with a concise description of the changes.
-
-For large changes, open an issue first to discuss the design.
-
----
-
 ## License
 
-`radlab-data` is released under the **MIT License**. See the `LICENSE` file for full details.
+`radlab-data` is released under the **Apache 2.0 License**. See the `LICENSE` file for full details.
