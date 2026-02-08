@@ -1,6 +1,6 @@
 # radlab‑data
 
-A versatile Python library for loading, preprocessing, and handling a variety of textual data sources (PDF, DOCX, TXT,
+A versatile Python library for loading, preprocessing, and handling a variety of textual data sources (PDF, DOCX, TXT, HTML,
 and raw strings) and preparing them for downstream machine‑learning tasks such as classification, sequence labeling, and
 generative modeling.
 
@@ -28,7 +28,7 @@ generative modeling.
 
 `radlab-data` provides a unified interface for:
 
-1. **Reading documents** from common file formats (PDF, DOCX, TXT) as well as plain‑text strings.
+1. **Reading documents** from common file formats (PDF, DOCX, TXT, HTML) as well as plain‑text strings.
 2. **Cleaning and normalising** raw text using a chain of configurable processors.
 3. **Splitting** text into sentences, paragraphs, or token‑level chunks.
 4. **Mapping** raw annotations (e.g., NER spans) onto tokenised representations.
@@ -41,7 +41,7 @@ dataset classes.
 
 ## Features
 
-- **Multi‑format document loading** – PDF, DOCX, TXT, and custom “input_text”.
+- **Multi‑format document loading** – PDF, DOCX, TXT, HTML, and custom “input_text”.
 - **Automatic language detection** (via `ftlangdetect`).
 - **Flexible text cleaning** – phrase removal, abbreviation normalisation, regex‑based sanitisation, etc.
 - **Sentence‑level splitting** using spaCy’s Polish model (`pl_core_news_lg`).
@@ -84,7 +84,7 @@ from radlab_data.text.document import Document
 from radlab_data.datasets.dataset_loader import DatasetLoader
 from transformers import AutoTokenizer
 
-# 1️⃣ Load a document (PDF, DOCX, TXT, or raw text)
+# 1️⃣ Load a document (PDF, DOCX, TXT, HTML, or raw text)
 doc = Document(
     file_path="data/example.pdf",
     prepare_proper_pages=True,

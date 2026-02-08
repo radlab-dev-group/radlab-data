@@ -3,6 +3,7 @@ import os.path
 from radlab_data.text.loaders.pdf import PDFLoader
 from radlab_data.text.loaders.txt import TXTLoader
 from radlab_data.text.loaders.docx import DOCXLoader
+from radlab_data.text.loaders.html import HTMLLoader
 from radlab_data.text.loaders.input_txt import InputTextLoader
 
 from radlab_data.text.loaders.config import (
@@ -24,6 +25,7 @@ class Document:
         "txt": TXTLoader,
         "pdf": PDFLoader,
         "docx": DOCXLoader,
+        "html": HTMLLoader,
         "input_text": InputTextLoader,
     }
 
