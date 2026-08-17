@@ -18,3 +18,4 @@ langchain
 python-docx
 pypdf
 
+Levenshtein
