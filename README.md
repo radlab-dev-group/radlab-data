@@ -1,6 +1,6 @@
 # radlab‑data
 
-A versatile Python library for loading, preprocessing, and handling a variety of textual data sources (PDF, DOCX, TXT, HTML,
+A versatile Python library for loading, preprocessing, and handling a variety of textual data sources (PDF, DOCX, TXT, MD, HTML,
 and raw strings) and preparing them for downstream machine‑learning tasks such as classification, sequence labeling, and
 generative modeling.
 
@@ -28,7 +28,7 @@ generative modeling.
 
 `radlab-data` provides a unified interface for:
 
-1. **Reading documents** from common file formats (PDF, DOCX, TXT, HTML) as well as plain‑text strings.
+1. **Reading documents** from common file formats (PDF, DOCX, TXT, MD, HTML) as well as plain‑text strings.
 2. **Cleaning and normalising** raw text using a chain of configurable processors.
 3. **Splitting** text into sentences, paragraphs, or token‑level chunks.
 4. **Mapping** raw annotations (e.g., NER spans) onto tokenised representations.
@@ -41,7 +41,7 @@ dataset classes.
 
 ## Features
 
-- **Multi‑format document loading** – PDF, DOCX, TXT, HTML, and custom “input_text”.
+- **Multi‑format document loading** – PDF, DOCX, TXT, MD, HTML, and custom “input_text”.
 - **Automatic language detection** (via `ftlangdetect`).
 - **Flexible text cleaning** – phrase removal, abbreviation normalisation, regex‑based sanitisation, etc.
 - **Sentence‑level splitting** using spaCy’s Polish model (`pl_core_news_lg`).
@@ -84,7 +84,7 @@ from radlab_data.text.document import Document
 from radlab_data.datasets.dataset_loader import DatasetLoader
 from transformers import AutoTokenizer
 
-# 1️⃣ Load a document (PDF, DOCX, TXT, HTML, or raw text)
+# 1️⃣ Load a document (PDF, DOCX, TXT, MD, HTML, or raw text)
 doc = Document(
     file_path="data/example.pdf",
     prepare_proper_pages=True,
@@ -137,6 +137,7 @@ All dataset classes inherit from `DatasetBaseClass`, which implements caching, o
 |-------------------|---------------------|----------------------------------------------------------|
 | `PDFLoader`       | `.pdf`              | Uses `langchain_community.document_loaders.PyPDFLoader`. |
 | `TXTLoader`       | `.txt`              | Simple line‑by‑line read via `TextLoader`.               |
+| `MarkdownLoader`  | `.md`               | Reads like `TXTLoader`, optional markup stripping.       |
 | `DOCXLoader`      | `.docx`             | Parses paragraphs and tables via `python-docx`.          |
 | `InputTextLoader` | `.input_text`       | Wraps a raw string supplied via options.                 |
 
@@ -146,6 +147,17 @@ Loaders share a common base (`LoaderI`) that handles:
 - Optional language detection,
 - Text denoising,
 - Chunking into token‑size windows.
+
+Markdown files are read as plain text and every page is tagged with
+`document_format: markdown`. Pass the `strip_markdown` option to remove markdown markup
+(headings, emphasis, links, code fences, list markers) while keeping the underlying text:
+
+```python
+from radlab_data.text.loaders.markdown import MarkdownLoader
+
+loader = MarkdownLoader("docs/README.md", options={"strip_markdown": True})
+pages = loader.load()
+```
 
 ### Processing Pipeline
 
@@ -190,7 +202,7 @@ All default settings live under `radlab_data/text/loaders/config.py`:
 
 ```python
 TOKENIZER_PATH = "radlab/polish-fast-tokenizer"
-AVAILABLE_FILE_EXTENSIONS = ["txt", "pdf", "docx", "input_text"]
+AVAILABLE_FILE_EXTENSIONS = ["txt", "md", "pdf", "docx", "input_text"]
 ```
 
 You can override these values at runtime by passing the appropriate arguments to `Document` or the loader classes.

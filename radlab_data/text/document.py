@@ -2,7 +2,9 @@ import os.path
 
 from radlab_data.text.loaders.pdf import PDFLoader
 from radlab_data.text.loaders.txt import TXTLoader
+from radlab_data.text.loaders.markdown import MarkdownLoader
 from radlab_data.text.loaders.docx import DOCXLoader
+
 # from radlab_data.text.loaders.html import HTMLLoader
 from radlab_data.text.loaders.input_txt import InputTextLoader
 
@@ -14,7 +16,7 @@ from radlab_data.text.loaders.config import (
 
 class Document:
     """
-    Definition of any loaded document (pdf, docx, txt). It is general definition
+    Definition of any loaded document (pdf, docx, txt, md). It is general definition
     which may be used to read content from any file with supported extensions.
 
     The full list of supported extension to read files, are defined into
@@ -23,6 +25,7 @@ class Document:
 
     EXTENSION_TO_LOADER = {
         "txt": TXTLoader,
+        "md": MarkdownLoader,
         "pdf": PDFLoader,
         "docx": DOCXLoader,
         # "html": HTMLLoader,
