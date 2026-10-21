@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="radlab_data",
-    version="0.0.3",
+    version="0.1.0",
     description="Text processing and modelling",
     author="RadLab",
     author_email="hello@radlab.dev",
