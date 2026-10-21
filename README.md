@@ -73,7 +73,7 @@ pip install -e .   # editable install if you cloned the repo
 
 - `torch`, `transformers`, `datasets`
 - `spacy` (Polish large model – `python -m spacy download pl_core_news_lg`)
-- `langchain`, `langchain‑community`, `ftlangdetect`, etc.
+- `ftlangdetect`, `beautifulsoup4`, `python-docx`, `pypdf`, etc.
 
 ---
 
@@ -91,7 +91,7 @@ doc = Document(
     clear_texts=True,
     use_text_denoiser=False,
 )
-pages = doc.load()  # pages is a list of `langchain` Document objects
+pages = doc.load()  # pages is a list of `DocumentPage` objects
 
 # 2️⃣ Initialise a tokenizer
 tokenizer = AutoTokenizer.from_pretrained("radlab/polish-fast-tokenizer")
@@ -133,13 +133,14 @@ All dataset classes inherit from `DatasetBaseClass`, which implements caching, o
 
 ### Text Loaders
 
-| Loader            | Supported Extension | Behaviour                                                |
-|-------------------|---------------------|----------------------------------------------------------|
-| `PDFLoader`       | `.pdf`              | Uses `langchain_community.document_loaders.PyPDFLoader`. |
-| `TXTLoader`       | `.txt`              | Simple line‑by‑line read via `TextLoader`.               |
-| `MarkdownLoader`  | `.md`               | Reads like `TXTLoader`, optional markup stripping.       |
-| `DOCXLoader`      | `.docx`             | Parses paragraphs and tables via `python-docx`.          |
-| `InputTextLoader` | `.input_text`       | Wraps a raw string supplied via options.                 |
+| Loader            | Supported Extension | Behaviour                                              |
+|-------------------|---------------------|--------------------------------------------------------|
+| `PDFLoader`       | `.pdf`              | One page per PDF page via `pypdf`.                     |
+| `TXTLoader`       | `.txt`              | Whole file as one page, with encoding autodetection.   |
+| `MarkdownLoader`  | `.md`               | Reads like `TXTLoader`, optional markup stripping.     |
+| `DOCXLoader`      | `.docx`             | Parses paragraphs and tables via `python-docx`.        |
+| `HTMLLoader`      | `.html`             | Strips markup via BeautifulSoup, `split_by_paragraph`. |
+| `InputTextLoader` | `.input_text`       | Wraps a raw string supplied via options.               |
 
 Loaders share a common base (`LoaderI`) that handles:
 
@@ -147,6 +148,9 @@ Loaders share a common base (`LoaderI`) that handles:
 - Optional language detection,
 - Text denoising,
 - Chunking into token‑size windows.
+
+Every loader returns `DocumentPage` objects (`page_content` plus a `metadata`
+dictionary), so no document-loading framework is needed to use `radlab-data`.
 
 Markdown files are read as plain text and every page is tagged with
 `document_format: markdown`. Pass the `strip_markdown` option to remove markdown markup
