@@ -12,7 +12,8 @@ from radlab_data.text.processors.cleaner import FullChainProcessor
 class LoaderI(abc.ABC):
     def __init__(self, filepath: str, options: dict = None) -> None:
         """
-        :param filepath: Path to docx file
+        :param filepath: Path to the loaded file
+        :param options: Options shared with the concrete document loader
         """
         self.filepath = filepath
         self.options = {} if not options else options
@@ -22,7 +23,7 @@ class LoaderI(abc.ABC):
         self._tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH)
         self._tokenizer.model_max_length = sys.maxsize
 
-        self._check_language = options.get("check_text_language", False)
+        self._check_language = self.options.get("check_text_language", False)
         if self._check_language is None:
             self._check_language = False
 
