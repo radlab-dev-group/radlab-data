@@ -14,7 +14,7 @@ scipy
 matplotlib
 openpyxl
 
-langchain
+beautifulsoup4
 python-docx
 pypdf
 
