@@ -1,6 +1,22 @@
 import spacy
 
-nlp_spacy = spacy.load("pl_core_news_lg")
+# The spaCy model is loaded lazily on the first use, because importing this
+# module (for example to use only the pair reader) should not require the
+# Polish model to be installed and should not take several seconds.
+MODEL_NAME = "pl_core_news_lg"
+_nlp = None
+
+
+def get_nlp():
+    """
+    Return the spaCy pipeline used for sentence splitting. The model is
+    loaded on the first call and cached for the next ones.
+    :return: Loaded spaCy pipeline
+    """
+    global _nlp
+    if _nlp is None:
+        _nlp = spacy.load(MODEL_NAME)
+    return _nlp
 
 
 class SentenceSplitter:
@@ -21,7 +37,7 @@ class SentenceSplitter:
          using standard str.split() method
         :return: List of sentences (+ optionally statistics dict)
         """
-        doc = nlp_spacy(text)
+        doc = get_nlp()(text)
 
         sentences = []
         text_stats = {

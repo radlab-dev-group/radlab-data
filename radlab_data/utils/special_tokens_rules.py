@@ -197,6 +197,12 @@ class SpecialTokensRulesParser:
         buckets = {k: [] for k in self.special_tokens}  # ordered dict (Python 3.7)
         for rule in special_tokens_rules:
             token = rule["token"]
+            if token not in buckets:
+                raise KeyError(
+                    f"Special token {token} used in the rule "
+                    f"{rule['when']!r} is not in the list of declared "
+                    f"special tokens: {self.special_tokens}."
+                )
             buckets[token].append(rule)
         new_rules = []
         for bucket in buckets.values():
@@ -230,10 +236,10 @@ class SpecialTokensRulesParser:
     def parse_when_words(self, when_words, sentence):
         try:
             return self._parse_when_words_recursive(when_words)
-        except:
+        except (AssertionError, KeyError, IndexError, ValueError) as error:
             raise Exception(
                 f"Error has occured while parsing the following rule: {sentence}"
-            )
+            ) from error
 
     def _are_outer_brackets_present(self, expression):
         if (
@@ -315,89 +321,10 @@ class SpecialTokensRulesParser:
                 op for op in used_operators if op["word_idx"] > split_point
             ]
             node = ApplicatorNode(type="operator")
-            node.child_a = self._parse_when_words_recursive(
-                words_left, operators_left
-            )
+            node.child_a = self._parse_when_words_recursive(words_left, operators_left)
             node.child_b = self._parse_when_words_recursive(
                 words_right, operators_right
             )
             node.operator_method = active_operator["operator"]["func"]
             node.str_representation = f"{active_operator['word']}"
             return node
-
-    def get_rule_applicator(self) -> RuleApplicator:
-        raise NotImplementedError()
-
-
-if __name__ == "__main__":
-    import copy
-
-    data = [
-        {
-            "text": "tekst input przyklad",
-            "labels": ["przykladowy tekst label", "przykladowy tekst label 2"],
-            "metadata": {
-                "left_ctx": "kontekst tekstu z lewej strony",
-                "right_ctx": "kontekst tekstu z prawej strony",
-                "tov_classification_results": {
-                    "prosty_glos_ing": 0.5,
-                    "jezyk_skomplikowany": 0.6,
-                },
-            },
-        }
-    ]
-    max_data_len = 1000
-    for idx in range(1, max_data_len):
-        new_elem = copy.deepcopy(data[0])
-        tov = new_elem["metadata"]["tov_classification_results"]
-        tov["prosty_glos_ing"] = (max_data_len % idx) / max_data_len
-        tov["jezyk_skomplikowany"] = ((max_data_len * 3) % idx) / max_data_len
-        data.append(new_elem)
-
-    special_token_data = {
-        "special_tokens": ["<test1>", "<test2>"],
-        "special_token_rules": [
-            {
-                "token": "<test2>",
-                "when": "(tov_classification_results::prosty_glos_ing > 0.2) or (tov_classification_results::prosty_glos_ing > 0.6 or tov_classification_results::prosty_glos_ing == 0.9)",
-                "placement": "text::beginning",
-            },
-            {
-                "token": "<test1>",
-                "when": "(tov_classification_results::prosty_glos_ing > 0.2) and (tov_classification_results::prosty_glos_ing > 0.6 or tov_classification_results::prosty_glos_ing == 0.9)",
-                "placement": "text::end",
-            },
-            {
-                "token": "<test2>",
-                "when": "tov_classification_results::jezyk_skomplikowany > 0.5",
-                "placement": "text::end",
-            },
-            {
-                "token": "<test1>",
-                "when": "tov_classification_results::jezyk_skomplikowany < 0.9",
-                "placement": "text::end",
-            },
-        ],
-    }
-    parser = SpecialTokensRulesParser(special_token_data["special_tokens"])
-    applicator_trees = parser.parse(special_token_data["special_token_rules"])
-    applicator = RuleApplicator(
-        rule_trees=applicator_trees,
-        special_tokens=special_token_data["special_tokens"],
-    )
-    for tree in applicator_trees:
-        print(tree.special_token)
-        print(tree)
-        print()
-        print("-" * 100)
-        print()
-
-    import json
-
-    # with open("temp/test_dataset/data.jsonl", mode="w") as fp:
-    #     for entry in data:
-    #         json.dump(entry, fp)
-    #         fp.write("\n")
-
-    applicator._process(data)
-    print(data)
