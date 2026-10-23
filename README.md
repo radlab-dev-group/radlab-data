@@ -18,8 +18,6 @@ generative modeling.
     - [Processing Pipeline](#processing-pipeline)
 - [Command‑Line Utilities](#command-line-utilities)
 - [Configuration](#configuration)
-- [Testing](#testing)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -188,15 +186,9 @@ the dataset type.
 
 ## Command‑Line Utilities
 
-The package includes a set of entry‑points for common tasks (exposed via `setup.cfg`/`pyproject.toml`):
-
-| Command                  | Description                                                               |
-|--------------------------|---------------------------------------------------------------------------|
-| `radlab-data-preprocess` | Apply a predefined preprocessing pipeline to a raw dataset folder.        |
-| `radlab-data-convert`    | Convert JSONL to cached HuggingFace format with optional tokeniser.       |
-| `radlab-data-train-args` | Generate a JSON file with default `TrainingArguments` for `transformers`. |
-
-Run `--help` on any command to see the full list of options.
+The package currently does not ship command‑line entry points; dataset
+conversion and preprocessing are driven from Python through the classes
+described above.
 
 ---
 
@@ -206,7 +198,7 @@ All default settings live under `radlab_data/text/loaders/config.py`:
 
 ```python
 TOKENIZER_PATH = "radlab/polish-fast-tokenizer"
-AVAILABLE_FILE_EXTENSIONS = ["txt", "md", "pdf", "docx", "input_text"]
+AVAILABLE_FILE_EXTENSIONS = ["txt", "md", "pdf", "docx", "html", "input_text"]
 ```
 
 You can override these values at runtime by passing the appropriate arguments to `Document` or the loader classes.
