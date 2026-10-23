@@ -17,5 +17,9 @@ openpyxl
 beautifulsoup4
 python-docx
 pypdf
+transformers
+torch
+requests
+numpy
 
 Levenshtein
