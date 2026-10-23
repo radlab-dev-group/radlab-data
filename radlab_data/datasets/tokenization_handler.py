@@ -26,7 +26,7 @@ class TokenizationHandler:
                    that the tokenizer pass through
         """
         self._tokenizer = tokenizer
-        self._blacklist = blacklist
+        self._blacklist = set() if blacklist is None else set(blacklist)
         self._tokenization_batch_size = tokenization_batch_size
 
     def _get_gatherer(self, obj, parent=None, key=None):

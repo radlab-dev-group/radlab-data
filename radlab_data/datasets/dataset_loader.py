@@ -40,7 +40,7 @@ class DatasetLoader:
         self._dataset_type = get_class_from_type_name(self._metadata["dataset_type"])
 
         if class_label_field_name is None:
-            if type(self._dataset_type) == type(SequenceToSequenceDataset):
+            if issubclass(self._dataset_type, SequenceToSequenceDataset):
                 self._class_label_field_name = "labels"
             else:
                 self._class_label_field_name = "label"
@@ -65,9 +65,7 @@ class DatasetLoader:
                     split_train_valid_test[0],
                     1 - split_train_valid_test[0],
                 )
-            elif (
-                len(split_train_valid_test) == 2 and sum(split_train_valid_test) != 1
-            ):
+            elif len(split_train_valid_test) == 2 and sum(split_train_valid_test) != 1:
                 test_num = 1 - sum(split_train_valid_test)
                 split_train_valid_test = (*split_train_valid_test, test_num)
 
@@ -102,16 +100,27 @@ class DatasetLoader:
         return dataset
 
     def _get_cached_dataset_path(self) -> str:
+        import hashlib
+        import json as _json
+
         date_created = self._metadata["date_created"]
         tokenizer_class_name = self._tokenizer.__class__.__name__
         dataset_name = os.path.basename(self._dataset_path)
         dataset_class_name = self._dataset_type.__name__
+        tokenizer_kwargs = _json.dumps(
+            self._tokenizer_kwargs, sort_keys=True, default=str
+        )
+        tokenizer_kwargs_hash = hashlib.sha256(tokenizer_kwargs.encode()).hexdigest()[
+            :12
+        ]
         key_string = (
             dataset_name
             + "__"
             + dataset_class_name
             + "__"
             + tokenizer_class_name
+            + "__"
+            + tokenizer_kwargs_hash
             + "__"
             + date_created
         )
@@ -127,29 +136,5 @@ class DatasetLoader:
         assert os.path.exists(path_to_load), f"{path_to_load} does not exist."
         assert os.path.isfile(path_to_load), f"{path_to_load} is not a file."
         _, extension = os.path.splitext(path_to_load)
-        assert (
-            extension == ".json"
-        ), "Only JSON formatted dataset files are supported."
+        assert extension == ".json", "Only JSON formatted dataset files are supported."
         return json_loader(path_to_load)
-
-
-if __name__ == "__main__":
-    from transformers import AutoTokenizer
-
-    tokenizer = AutoTokenizer.from_pretrained("radlab/polish-fast-tokenizer")
-    dl = DatasetLoader(
-        "/home/kschnetzer/projects/radlab-data/temp/dialoguetestdataset",
-        tokenizer,
-        split_train_valid_test="0.1:0.1",
-    )
-    dataset = dl.load()
-    train = dataset.train_dataset
-    valid = dataset.valid_dataset
-    test = dataset.test_dataset
-    print(train[0])
-    if train:
-        print(len(train))
-    if valid:
-        print(len(valid))
-    if test:
-        print(len(test))

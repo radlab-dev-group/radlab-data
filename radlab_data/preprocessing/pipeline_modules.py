@@ -54,6 +54,11 @@ class RemoveUnlabelledData(PipelineElementBase):
                 if elem[dataset.class_label_field_name]
             )
             return dataset
+        else:
+            raise TypeError(
+                f"{self.__class__.__name__} does not support dataset of type "
+                f"{dataset.__class__.__name__}."
+            )
 
 
 class RemoveDuplicates(PipelineElementBase):
@@ -222,9 +227,7 @@ class AlignAnnotationToWordBoundaries(PipelineElementBase):
                 a_last_pos = a_end_pos - 1
                 text_len = len(text_str)
 
-                if not (
-                    (0 <= a_beg_pos < text_len) and (0 <= a_last_pos < text_len)
-                ):
+                if not ((0 <= a_beg_pos < text_len) and (0 <= a_last_pos < text_len)):
                     warnings.warn(
                         f"Annotation boundaries incorrect ({annotation = }, {text_len = }, {text_str[:64] = }). Skipping annotation."
                     )
@@ -278,9 +281,7 @@ class AlignAnnotationToWordBoundaries(PipelineElementBase):
                 return corr_pos
         return len(text_str) - 1
 
-    def _align_to_most_word(
-        self, position: int, text_str: str, direction: str
-    ) -> int:
+    def _align_to_most_word(self, position: int, text_str: str, direction: str) -> int:
         """
         Align annotation to most annotated part of word.
         Depends on direction (left, right) begin position will be moved to
