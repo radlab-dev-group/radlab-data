@@ -1,5 +1,6 @@
 import itertools
 import json
+import logging
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -96,7 +97,11 @@ class Dataset(ABC):
 
         data_loader_function = self.ALLOWED_EXTENSIONS[dataset_extension]
         if is_dir:
-            files = os.listdir(dataset_path)
+            files = sorted(
+                filename
+                for filename in os.listdir(dataset_path)
+                if filename.endswith(dataset_extension)
+            )
             all_data = []
             for filename in files:
                 file_path = os.path.join(dataset_path, filename)
@@ -200,8 +205,8 @@ class ClassificationDataset(Dataset, ABC):
                 self._prepare_single_label(row["source_label"])
             ] = self._prepare_single_label(row["target_label"])
 
-        for k, v in self._class_labels_mapping.items():
-            print(k, "=====>", v)
+        for source_label, target_label in self._class_labels_mapping.items():
+            logging.info(f"Mapped label: {source_label} -> {target_label}")
 
     def get_save_dir(self, path, add_date_created_to_name: bool = True) -> str:
         if add_date_created_to_name:
@@ -216,9 +221,7 @@ class ClassificationDataset(Dataset, ABC):
         self,
         save_config: SaveConfiguration,
     ) -> str:
-        path = self.get_save_dir(
-            save_config.path, save_config.add_date_created_to_name
-        )
+        path = self.get_save_dir(save_config.path, save_config.add_date_created_to_name)
 
         metadata_to_save = {
             "dataset_type": self.__class__.__name__,
@@ -304,9 +307,7 @@ class SequenceToSequenceDataset(Dataset):
                 specials_tokens_file_path
             )
             self.special_tokens = self.special_token_info["special_tokens"]
-            self.special_tokens_rules = self.special_token_info[
-                "special_token_rules"
-            ]
+            self.special_tokens_rules = self.special_token_info["special_token_rules"]
 
         self._random_state = None
         self._is_processed = False
@@ -353,9 +354,7 @@ class SequenceToSequenceDataset(Dataset):
         self,
         save_config: SaveConfiguration,
     ) -> str:
-        path = self.get_save_dir(
-            save_config.path, save_config.add_date_created_to_name
-        )
+        path = self.get_save_dir(save_config.path, save_config.add_date_created_to_name)
 
         metadata_to_save = {
             "dataset_type": self.__class__.__name__,
@@ -447,6 +446,7 @@ class SequenceLabellingDataset(ClassificationDataset):
         )
         self._show_histogram = False
         self._assert_message = True
+        self._label_pair_mapping_cache = {}
 
     def save(self, save_config: SaveConfiguration) -> str:
         self._show_histogram = save_config.show_class_labels_histogram
@@ -501,9 +501,7 @@ class SequenceLabellingDataset(ClassificationDataset):
                 pairs[split] = []
             for text_pack in split_values:
                 for text in text_pack:
-                    labels = set(
-                        [x[2:] for x in text["iob_tags"].split() if x != "O"]
-                    )
+                    labels = set([x[2:] for x in text["iob_tags"].split() if x != "O"])
                     if len(labels) == 1:
                         label = list(labels)[0]
                     else:
@@ -525,7 +523,7 @@ class SequenceLabellingDataset(ClassificationDataset):
             all_examples,
             test_size=0.05,
             shuffle=True,
-            random_state=self._random_state,
+            random_state=42 if self._random_state is None else self._random_state,
         )
         out_dataset = {"train": train_data, "test": test_data}
         return out_dataset
@@ -623,9 +621,7 @@ class SequenceLabellingDataset(ClassificationDataset):
 
             if len(m_text_str.strip().split()) != len(labels_str.split()):
                 if self._assert_message:
-                    assert len(m_text_str.strip().split()) == len(
-                        labels_str.split()
-                    ), (
+                    assert len(m_text_str.strip().split()) == len(labels_str.split()), (
                         f"\n\nDifferent number of words and tags after "
                         f"converting text {dataset_idx}!\n\n"
                         f"{len(labels_str.split())}: {labels_str}\n\n"
@@ -645,9 +641,7 @@ class SequenceLabellingDataset(ClassificationDataset):
                 )
             dataset_idx += 1
         if merge_example_labels:
-            out_iob_anno = self._merge_text_annotations(
-                text_annotations=out_iob_anno
-            )
+            out_iob_anno = self._merge_text_annotations(text_annotations=out_iob_anno)
 
         return out_iob_anno, dataset_idx
 
@@ -678,9 +672,7 @@ class SequenceLabellingDataset(ClassificationDataset):
 
     def _get_label_distribution(self, data, dtype=set):
         original_labels = dtype(
-            l[2]
-            for elem in data
-            for l in elem["metadata"][self.class_label_field_name]
+            l[2] for elem in data for l in elem["metadata"][self.class_label_field_name]
         )
         # TODO: why len instead of "if self._class_labels_maping:"
         if len(self._class_labels_mapping):
@@ -705,24 +697,20 @@ class SequenceLabellingDataset(ClassificationDataset):
     def _get_labels(self, data):
         return self._get_label_distribution(data, dtype=set)
 
-    LABEL_PAIR_MAPPING_CACHE = {}
-
     def _map_label_pair(self, label_str):
-        label_pair = self.LABEL_PAIR_MAPPING_CACHE.get(label_str, None)
+        label_pair = self._label_pair_mapping_cache.get(label_str, None)
         if label_pair is None:
             label_pair = (
                 self.label2id[f"B-{label_str}"],
                 self.label2id[f"I-{label_str}"],
             )
-            self.LABEL_PAIR_MAPPING_CACHE[label_str] = label_pair
+            self._label_pair_mapping_cache[label_str] = label_pair
         return label_pair
 
     def _map_labels(self):
         for elem in self._raw_data:
             mapped_labels = []
-            for idx, label in enumerate(
-                elem["metadata"][self.class_label_field_name]
-            ):
+            for idx, label in enumerate(elem["metadata"][self.class_label_field_name]):
                 label_str = label[2]
                 if len(self._class_labels_mapping):
                     label_str = self._get_mapped_label(label_str)

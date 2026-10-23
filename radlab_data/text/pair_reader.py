@@ -37,7 +37,7 @@ class FirstSecondNumberPairElems(PairElemsAbstract):
 
 AVAILABLE_POSTFIXES = {
     FirstSecondPairElems.NAME: FirstSecondPairElems,
-    FirstSecondNumberPairElems.NAME: FirstSecondPairElems,
+    FirstSecondNumberPairElems.NAME: FirstSecondNumberPairElems,
 }
 
 
@@ -83,9 +83,7 @@ class DirectoryPairsReader:
     def base_name_to_paths(self):
         return self._document_pairs
 
-    def prepare_pairs(
-        self, dir_path: str | None = None
-    ) -> Dict[str, Dict[str, str]]:
+    def prepare_pairs(self, dir_path: str | None = None) -> Dict[str, Dict[str, str]]:
         """
         List files from given dir_path and prepare pairs of documents
 
@@ -96,9 +94,7 @@ class DirectoryPairsReader:
             dir_path = self._documents_dir_path
         else:
             self._documents_dir_path = dir_path
-        assert (
-            dir_path is not None
-        ), f"Directory with documents pairs is not provided"
+        assert dir_path is not None, f"Directory with documents pairs is not provided"
 
         self._document_pairs.clear()
         self._document_pairs_content.clear()
@@ -108,6 +104,7 @@ class DirectoryPairsReader:
                     f"Skipping {file_name} - is not valid "
                     f"{self._postfix_configuration} file name"
                 )
+                continue
 
             base_file_name = self._filename_without_postfix(file_name)
             if base_file_name not in self._document_pairs:
@@ -153,9 +150,7 @@ class DirectoryPairsReader:
                         file_path=s_file, unique_rows_in_cell=unique_rows_in_cell
                     )
                 else:
-                    logging.info(
-                        f"Skipping file with not supported extension {f_file}"
-                    )
+                    logging.info(f"Skipping file with not supported extension {f_file}")
 
                 self._document_pairs_content[base_doc_name] = {
                     self.postfix.FIRST_PAIR_ELEM: first_paragraphs,
@@ -196,9 +191,7 @@ class DirectoryPairsReader:
                 pbar.update()
         return None
 
-    def _split_paragraphs_to_sentences(
-        self, paragraphs: list, min_sent_len: int = 1
-    ):
+    def _split_paragraphs_to_sentences(self, paragraphs: list, min_sent_len: int = 1):
         all_sentences = []
         for paragraph_text in paragraphs:
             sentences = self._sentence_splitter.split(
@@ -223,8 +216,12 @@ class DirectoryPairsReader:
         tab_texts = []
         for table in docx_loader.tables:
             for row in table.rows:
-                for cell in row.cells:
-                    tab_texts.append(cell.text.strip())
+                cell_texts = [
+                    cell.text.strip() for cell in row.cells if cell.text.strip()
+                ]
+                if unique_rows_in_cell:
+                    cell_texts = list(dict.fromkeys(cell_texts))
+                tab_texts.extend(cell_texts)
         return par_texts + tab_texts
 
     def _filename_without_postfix(self, filename: str) -> str:
