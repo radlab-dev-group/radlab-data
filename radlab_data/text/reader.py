@@ -4,7 +4,6 @@ from multiprocessing import Pool
 import tqdm
 import pathlib
 import logging
-import queue
 
 from radlab_data.text.document import Document
 from radlab_data.text.loaders.config import AVAILABLE_FILE_EXTENSIONS
@@ -15,25 +14,28 @@ class DirectoryFileReader:
         self,
         main_dir_path: str,
         read_sub_dirs: bool = True,
-        accept_extensions: list = AVAILABLE_FILE_EXTENSIONS,
+        accept_extensions: list = None,
         processes_count: int = None,
     ):
         """
         :param main_dir_path: Path to main directory to load files
         :param read_sub_dirs: If set to True, then will be done listing
         all files in main_dir_path with subdirectories
-        :param accept_extensions: List of accepted extension
+        :param accept_extensions: List of accepted extension, defaults to
+        `AVAILABLE_FILE_EXTENSIONS`
         :param processes_count: If number of processes is greater than 1,
         will use given number of processes to load listed files.
         """
         self.main_dir_path = main_dir_path
         self.deep_read = read_sub_dirs
-        self.accept_extensions = accept_extensions
+        self.accept_extensions = (
+            list(AVAILABLE_FILE_EXTENSIONS)
+            if accept_extensions is None
+            else accept_extensions
+        )
 
         self._processes_count = processes_count
-        self._mt_queue = None
-        if processes_count is not None and processes_count > 1:
-            self._mt_queue = queue.Queue()
+        self._use_multiprocessing = processes_count is not None and processes_count > 1
         self._files_in_directory = self._list_files()
         self._all_documents_in_directory = []
 
@@ -76,7 +78,7 @@ class DirectoryFileReader:
         logging.info(f"max_tokens_in_chunk={max_tokens_in_chunk}")
         logging.info(f"number_of_overlap_tokens={number_of_overlap_tokens}")
 
-        if self._mt_queue is not None:
+        if self._use_multiprocessing:
             return self._load_mt(
                 prepare_proper_pages=prepare_proper_pages,
                 merge_document_pages=merge_document_pages,
@@ -92,12 +94,9 @@ class DirectoryFileReader:
         ) as pbar:
             for file_path in self._files_in_directory:
                 try:
-                    f_spl = file_path.split(self.main_dir_path)
-                    relative_file_path = f_spl[1] if len(f_spl) > 1 else f_spl[0]
-
                     doc = Document(
                         file_path=file_path,
-                        relative_file_path=relative_file_path,
+                        relative_file_path=self._relative_file_path(file_path),
                         prepare_proper_pages=prepare_proper_pages,
                         merge_document_pages=merge_document_pages,
                         clear_texts=clear_texts,
@@ -108,10 +107,23 @@ class DirectoryFileReader:
                     )
                     doc.load()
                     self._all_documents_in_directory.append(doc)
-                except Exception as e:
-                    logging.warning(f"Problem wih loading file {file_path}")
-                    logging.warning(e)
+                except Exception:
+                    logging.warning(
+                        f"Problem with loading file {file_path}", exc_info=True
+                    )
                 pbar.update()
+
+    def _relative_file_path(self, file_path: str) -> str:
+        """
+        Path to the file relative to the main directory path.
+        :param file_path: Path to the loaded file
+        :return: Relative path, the original path when it is not located
+        inside the main directory
+        """
+        try:
+            return os.path.relpath(file_path, self.main_dir_path)
+        except ValueError:
+            return file_path
 
     def _list_files(self) -> list:
         """
@@ -162,12 +174,9 @@ class DirectoryFileReader:
         pool = Pool(self._processes_count)
         async_loading = []
         for file_path in self._files_in_directory:
-            f_spl = file_path.split(self.main_dir_path)
-            relative_file_path = f_spl[1] if len(f_spl) > 1 else f_spl[0]
-
             doc = Document(
                 file_path=file_path,
-                relative_file_path=relative_file_path,
+                relative_file_path=self._relative_file_path(file_path),
                 prepare_proper_pages=prepare_proper_pages,
                 merge_document_pages=merge_document_pages,
                 clear_texts=clear_texts,
@@ -176,17 +185,14 @@ class DirectoryFileReader:
                 number_of_overlap_tokens=number_of_overlap_tokens,
                 check_text_language=check_text_language,
             )
-            async_loading.append(
-                pool.apply_async(self._load_document_mt, args=(doc,))
-            )
+            async_loading.append(pool.apply_async(self._load_document_mt, args=(doc,)))
         with tqdm.tqdm(total=len(async_loading), desc="Loading files") as pbar:
             for worker in async_loading:
                 try:
                     wd = worker.get()
                     self._all_documents_in_directory.append(wd)
-                except Exception as e:
-                    logging.warning("Problem wih loading file")
-                    logging.warning(e)
+                except Exception as error:
+                    logging.warning(f"Problem with loading file: {error}")
                 pbar.update()
         pool.close()
         pool.join()

@@ -1,12 +1,30 @@
 import sys
 import abc
 import copy
+from functools import lru_cache
 
 from transformers import AutoTokenizer
 
 from radlab_data.text.utils import TextUtils
 from radlab_data.text.loaders.config import TOKENIZER_PATH
 from radlab_data.text.processors.cleaner import FullChainProcessor
+
+
+@lru_cache(maxsize=4)
+def get_tokenizer(tokenizer_path: str = None):
+    """
+    Return the tokenizer for the given path. Tokenizers are cached, because
+    loading the same tokenizer over and over again (once per loaded document)
+    is a significant and completely avoidable overhead.
+    :param tokenizer_path: Path or name of the tokenizer, defaults to
+    `config.TOKENIZER_PATH`
+    :return: Loaded tokenizer with the model max length limitation removed
+    """
+    if tokenizer_path is None:
+        tokenizer_path = TOKENIZER_PATH
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer.model_max_length = sys.maxsize
+    return tokenizer
 
 
 class LoaderI(abc.ABC):
@@ -20,8 +38,7 @@ class LoaderI(abc.ABC):
         self.doc_pages = []
         self.text_chunk_type = None
         self._text_cleaner = FullChainProcessor(phrases_to_remove=[])
-        self._tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH)
-        self._tokenizer.model_max_length = sys.maxsize
+        self._tokenizer = get_tokenizer()
 
         self._check_language = self.options.get("check_text_language", False)
         if self._check_language is None:
@@ -62,13 +79,8 @@ class LoaderI(abc.ABC):
         Return document as dictionary (json)
         :return: Document converted to dictionary
         """
-        relative_file_path = self.filepath
-        if "relative_file_path" in self.options:
-            relative_file_path = self.options.pop("relative_file_path")
-
-        category = ""
-        if "document_category" in self.options:
-            category = self.options.pop("document_category")
+        relative_file_path = self.options.get("relative_file_path", self.filepath)
+        category = self.options.get("document_category", "")
 
         doc_dict = {
             "filepath": self.filepath,
