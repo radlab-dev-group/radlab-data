@@ -23,3 +23,6 @@ requests
 numpy
 
 Levenshtein
+
+# dev
+pytest
