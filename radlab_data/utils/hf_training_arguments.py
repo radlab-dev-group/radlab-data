@@ -76,7 +76,7 @@ class HFTrainingArgumentHandler:
             weight_decay=0.001,
             load_best_model_at_end=True,
             logging_steps=10,
-            evaluation_strategy="steps",
+            eval_strategy="steps",
             eval_steps=40,
             disable_tqdm=False,
             logging_first_step=False,
