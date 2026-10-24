@@ -278,7 +278,7 @@ class ClassificationDataset(Dataset, ABC):
 
     def _get_label_histogram(self, data):
         all_labels = self._get_label_distribution(data, dtype=list)
-        if not isinstance(all_labels[0], str):
+        if all_labels and not isinstance(all_labels[0], str):
             raise TypeError(
                 "Histogram should be generated before mapping labels to types other than str."
             )
