@@ -6,6 +6,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Moved packaging metadata from `setup.py` to `pyproject.toml` (PEP 621):
+  project info, classifiers, `Homepage` URL and the full dependency set with
+  the `ml` / `spacy` / `lang` / `tables` / `all` extras. `setup.py` was
+  removed.
+- The distribution is now named `radlab-data` (was `radlab_data`); the import
+  name stays `radlab_data`. The version is read from a `.version` file and
+  `radlab_data.__version__` falls back to it when the package is used from a
+  source checkout.
+- `MANIFEST.in` now controls the sdist contents (README, CHANGELOG, LICENSE,
+  `requirements.txt`, `pyproject.toml`, `.version` are included; `tests` and
+  build artefacts are excluded).
+
+### Added
+
+- `tests/test_packaging.py` keeps `requirements.txt` in sync with
+  `pyproject.toml` so the two dependency lists never drift apart.
+
 ## [0.1.1] - 2026-11-22
 
 ### Changed
