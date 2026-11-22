@@ -1,0 +1,10 @@
+include README.md
+include CHANGELOG.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+include .version
+
+recursive-exclude tests *
+global-exclude *.py[cod]
+global-exclude *.egg-info
