@@ -25,7 +25,8 @@ deepl
 pandas
 openpyxl
 
-setuptools
-
-# dev
+# dev and packaging (not installed with the package)
 pytest
+setuptools
+build
+tomli; python_version < "3.11"
