@@ -1,4 +1,6 @@
 import logging
+import subprocess
+import sys
 
 import pytest
 
@@ -84,3 +86,34 @@ def test_multiprocessing_loading(sample_documents_dir):
         "pdf",
         "docx",
     }
+
+
+def test_core_modules_import_without_the_model_stack():
+    """
+    The document-loading core must be importable on a host without
+    ``torch``/``transformers``/``spacy`` (the query-only hosts of the
+    semantic search engine).  A subprocess is used, because a module which is
+    already imported cannot be un-imported in the test process.
+    """
+    import subprocess
+
+    probe = (
+        "import builtins, sys\n"
+        "blocked = {'torch', 'transformers', 'spacy', 'sentence_transformers'}\n"
+        "real = builtins.__import__\n"
+        "def guarded(name, *args, **kwargs):\n"
+        "    if name.split('.')[0] in blocked:\n"
+        "        raise ImportError(name)\n"
+        "    return real(name, *args, **kwargs)\n"
+        "builtins.__import__ = guarded\n"
+        "import radlab_data.text.document\n"
+        "import radlab_data.text.reader\n"
+        "import radlab_data.text.utils\n"
+        "import radlab_data.text.loaders.loader_i\n"
+        "import radlab_data.utils.threads\n"
+        "import radlab_data.utils.api_handler\n"
+        "print('ok')\n"
+    )
+    result = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "ok" in result.stdout

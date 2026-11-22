@@ -3,8 +3,6 @@ import abc
 import copy
 from functools import lru_cache
 
-from transformers import AutoTokenizer
-
 from radlab_data.text.utils import TextUtils
 from radlab_data.text.loaders.config import TOKENIZER_PATH
 from radlab_data.text.processors.cleaner import FullChainProcessor
@@ -16,12 +14,18 @@ def get_tokenizer(tokenizer_path: str = None):
     Return the tokenizer for the given path. Tokenizers are cached, because
     loading the same tokenizer over and over again (once per loaded document)
     is a significant and completely avoidable overhead.
+
+    The ``transformers`` import happens here, not at module import time, so the
+    core document-loading parts of ``radlab_data`` can be imported on hosts that
+    do not carry the model stack.
     :param tokenizer_path: Path or name of the tokenizer, defaults to
     `config.TOKENIZER_PATH`
     :return: Loaded tokenizer with the model max length limitation removed
     """
     if tokenizer_path is None:
         tokenizer_path = TOKENIZER_PATH
+    from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     tokenizer.model_max_length = sys.maxsize
     return tokenizer
@@ -38,13 +42,25 @@ class LoaderI(abc.ABC):
         self.doc_pages = []
         self.text_chunk_type = None
         self._text_cleaner = FullChainProcessor(phrases_to_remove=[])
-        self._tokenizer = get_tokenizer()
+        self._tokenizer_instance = None
 
         self._check_language = self.options.get("check_text_language", False)
         if self._check_language is None:
             self._check_language = False
 
         self._resolve_text_chunk_type()
+
+    @property
+    def _tokenizer(self):
+        """
+        Lazily load the tokenizer on first access. Loaders only need it when
+        chunking pages by tokens, so merely constructing (or importing) a
+        loader no longer requires ``transformers`` to be installed.
+        :return: Tokenizer used for token-level chunking
+        """
+        if self._tokenizer_instance is None:
+            self._tokenizer_instance = get_tokenizer()
+        return self._tokenizer_instance
 
     def _resolve_text_chunk_type(self):
         sep = ""

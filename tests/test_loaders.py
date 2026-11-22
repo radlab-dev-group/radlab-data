@@ -56,8 +56,10 @@ class _FakeAutoTokenizer:
 
 
 def test_get_tokenizer_is_cached(monkeypatch):
+    # `transformers` is imported inside `get_tokenizer`, so the fake is
+    # patched on the `transformers` module, not on `loader_i`.
     _FakeAutoTokenizer.calls = []
-    monkeypatch.setattr("radlab_data.text.loaders.loader_i.AutoTokenizer", _FakeAutoTokenizer)
+    monkeypatch.setattr("transformers.AutoTokenizer", _FakeAutoTokenizer)
     get_tokenizer.cache_clear()
     first = get_tokenizer("sczytnik/testowy")
     second = get_tokenizer("sczytnik/testowy")

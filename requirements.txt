@@ -1,28 +1,31 @@
+# Core (always installed with the package)
 tqdm
-
-pandas
-
-spacy
-setuptools
-datasets
-
-fasttext-langdetect
-deepl
-
-scikit-learn
-scipy
-matplotlib
-openpyxl
-
+requests
 beautifulsoup4
 python-docx
 pypdf
+
+# ml: token chunking, HF datasets, training and metrics
 transformers
 torch
-requests
+datasets
 numpy
+scikit-learn
+scipy
+matplotlib
 
-Levenshtein
+# spacy: sentence splitting (Polish model: python -m spacy download pl_core_news_lg)
+spacy
+
+# lang: language detection and translation
+fasttext-langdetect
+deepl
+
+# tables: dataset preprocessing
+pandas
+openpyxl
+
+setuptools
 
 # dev
 pytest

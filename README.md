@@ -62,16 +62,38 @@ dataset classes.
 python -m venv .venv
 source .venv/bin/activate   # on Windows: .venv\Scripts\activate
 
-# Install radlab-data and its dependencies
-pip install -e .   # editable install if you cloned the repo
+# Core only: document loading, cleaning and small utilities
+pip install -e .
+
+# Everything, including the model stack
+pip install -e ".[all]"
 ```
 
-> **Note**: The library requires Python 3.10+ and the following external packages (automatically installed via
-`requirements.txt`):
+> **Note**: The library requires Python 3.10+.
 
-- `torch`, `transformers`, `datasets`
-- `spacy` (Polish large model – `python -m spacy download pl_core_news_lg`)
-- `ftlangdetect`, `beautifulsoup4`, `python-docx`, `pypdf`, etc.
+### Dependency extras
+
+The core installs only the light packages needed to read and clean documents
+(`tqdm`, `requests`, `beautifulsoup4`, `python-docx`, `pypdf`). Importing the
+document loaders, `Document`, `DirectoryFileReader` or `TextUtils` therefore
+does **not** pull in `torch`, `transformers` or `spacy` — a query-only host
+(for example the [Semantic Search Engine](https://dev.radlab.pl/semantic-search-engine) API)
+can install the core alone.
+
+| Extra      | Installs                                                          | Needed for                                                       |
+|------------|-------------------------------------------------------------------|------------------------------------------------------------------|
+| `ml`       | `transformers`, `torch`, `datasets`, `numpy`, `scikit-learn`, `scipy`, `matplotlib` | token-level chunking (`max_tokens_in_chunk`), HF datasets, metrics and training helpers |
+| `spacy`    | `spacy`                                                            | `SentenceSplitter` and `PairReader` (Polish model: `python -m spacy download pl_core_news_lg`) |
+| `lang`     | `fasttext-langdetect`, `deepl`                                     | `TextUtils.text_language`, `TextUtils.translate_text_deepl`       |
+| `tables`   | `pandas`, `openpyxl`                                               | dataset preprocessing and spreadsheet input                       |
+| `all`      | all of the above                                                   | the full feature set                                              |
+
+Heavy imports are lazy: `transformers` is imported inside
+`radlab_data.text.loaders.loader_i.get_tokenizer()` (so inside the first use of
+token chunking), `spacy` inside
+`radlab_data.text.processors.splitter.get_nlp()`, and `ftlangdetect`/`deepl`
+inside the `TextUtils` methods which use them. `requirements.txt` lists every
+extra for a full development environment.
 
 ---
 
