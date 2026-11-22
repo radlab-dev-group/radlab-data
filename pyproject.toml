@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radlab-data"
+dynamic = ["version"]
+description = "Text processing and modelling"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "RadLab", email = "hello@radlab.dev" },
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing",
+]
+dependencies = [
+    "tqdm",
+    "requests",
+    "beautifulsoup4",
+    "python-docx",
+    "pypdf",
+]
+
+[project.optional-dependencies]
+ml = [
+    "transformers",
+    "torch",
+    "datasets",
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "matplotlib",
+]
+spacy = [
+    "spacy",
+]
+lang = [
+    "fasttext-langdetect",
+    "deepl",
+]
+tables = [
+    "pandas",
+    "openpyxl",
+]
+all = [
+    "transformers",
+    "torch",
+    "datasets",
+    "numpy",
+    "scikit-learn",
+    "scipy",
+    "matplotlib",
+    "spacy",
+    "fasttext-langdetect",
+    "deepl",
+    "pandas",
+    "openpyxl",
+]
+
+[project.urls]
+Homepage = "https://radlab.dev"
+
+[tool.setuptools.dynamic]
+version = { file = ".version" }
+
+[tool.setuptools.packages.find]
+include = ["radlab_data*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

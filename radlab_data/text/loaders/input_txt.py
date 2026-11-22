@@ -1,4 +1,4 @@
-from langchain_core.documents import Document
+from radlab_data.text.loaders.base import DocumentPage
 
 from radlab_data.text.loaders.loader_i import LoaderI
 
@@ -24,5 +24,7 @@ class InputTextLoader(LoaderI):
         self._content = options[self.DOCUMENT_CONTENT_VARIABLE]
 
     def load(self):
-        self.doc_pages = [Document(page_content=self._content, metadata={"page": 1})]
+        self.doc_pages = [
+            DocumentPage(page_content=self._content, metadata={"page": 1})
+        ]
         return self.doc_pages

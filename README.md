@@ -18,8 +18,6 @@ generative modeling.
     - [Processing Pipeline](#processing-pipeline)
 - [Command‑Line Utilities](#command-line-utilities)
 - [Configuration](#configuration)
-- [Testing](#testing)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -64,16 +62,38 @@ dataset classes.
 python -m venv .venv
 source .venv/bin/activate   # on Windows: .venv\Scripts\activate
 
-# Install radlab-data and its dependencies
-pip install -e .   # editable install if you cloned the repo
+# Core only: document loading, cleaning and small utilities
+pip install -e .
+
+# Everything, including the model stack
+pip install -e ".[all]"
 ```
 
-> **Note**: The library requires Python 3.10+ and the following external packages (automatically installed via
-`requirements.txt`):
+> **Note**: The library requires Python 3.10+.
 
-- `torch`, `transformers`, `datasets`
-- `spacy` (Polish large model – `python -m spacy download pl_core_news_lg`)
-- `langchain`, `langchain‑community`, `ftlangdetect`, etc.
+### Dependency extras
+
+The core installs only the light packages needed to read and clean documents
+(`tqdm`, `requests`, `beautifulsoup4`, `python-docx`, `pypdf`). Importing the
+document loaders, `Document`, `DirectoryFileReader` or `TextUtils` therefore
+does **not** pull in `torch`, `transformers` or `spacy` — a query-only host
+(for example the [Semantic Search Engine](https://dev.radlab.pl/semantic-search-engine) API)
+can install the core alone.
+
+| Extra      | Installs                                                          | Needed for                                                       |
+|------------|-------------------------------------------------------------------|------------------------------------------------------------------|
+| `ml`       | `transformers`, `torch`, `datasets`, `numpy`, `scikit-learn`, `scipy`, `matplotlib` | token-level chunking (`max_tokens_in_chunk`), HF datasets, metrics and training helpers |
+| `spacy`    | `spacy`                                                            | `SentenceSplitter` and `PairReader` (Polish model: `python -m spacy download pl_core_news_lg`) |
+| `lang`     | `fasttext-langdetect`, `deepl`                                     | `TextUtils.text_language`, `TextUtils.translate_text_deepl`       |
+| `tables`   | `pandas`, `openpyxl`                                               | dataset preprocessing and spreadsheet input                       |
+| `all`      | all of the above                                                   | the full feature set                                              |
+
+Heavy imports are lazy: `transformers` is imported inside
+`radlab_data.text.loaders.loader_i.get_tokenizer()` (so inside the first use of
+token chunking), `spacy` inside
+`radlab_data.text.processors.splitter.get_nlp()`, and `ftlangdetect`/`deepl`
+inside the `TextUtils` methods which use them. `requirements.txt` lists every
+extra for a full development environment.
 
 ---
 
@@ -91,7 +111,7 @@ doc = Document(
     clear_texts=True,
     use_text_denoiser=False,
 )
-pages = doc.load()  # pages is a list of `langchain` Document objects
+pages = doc.load()  # pages is a list of `DocumentPage` objects
 
 # 2️⃣ Initialise a tokenizer
 tokenizer = AutoTokenizer.from_pretrained("radlab/polish-fast-tokenizer")
@@ -133,13 +153,14 @@ All dataset classes inherit from `DatasetBaseClass`, which implements caching, o
 
 ### Text Loaders
 
-| Loader            | Supported Extension | Behaviour                                                |
-|-------------------|---------------------|----------------------------------------------------------|
-| `PDFLoader`       | `.pdf`              | Uses `langchain_community.document_loaders.PyPDFLoader`. |
-| `TXTLoader`       | `.txt`              | Simple line‑by‑line read via `TextLoader`.               |
-| `MarkdownLoader`  | `.md`               | Reads like `TXTLoader`, optional markup stripping.       |
-| `DOCXLoader`      | `.docx`             | Parses paragraphs and tables via `python-docx`.          |
-| `InputTextLoader` | `.input_text`       | Wraps a raw string supplied via options.                 |
+| Loader            | Supported Extension | Behaviour                                              |
+|-------------------|---------------------|--------------------------------------------------------|
+| `PDFLoader`       | `.pdf`              | One page per PDF page via `pypdf`.                     |
+| `TXTLoader`       | `.txt`              | Whole file as one page, with encoding autodetection.   |
+| `MarkdownLoader`  | `.md`               | Reads like `TXTLoader`, optional markup stripping.     |
+| `DOCXLoader`      | `.docx`             | Parses paragraphs and tables via `python-docx`.        |
+| `HTMLLoader`      | `.html`             | Strips markup via BeautifulSoup, `split_by_paragraph`. |
+| `InputTextLoader` | `.input_text`       | Wraps a raw string supplied via options.               |
 
 Loaders share a common base (`LoaderI`) that handles:
 
@@ -147,6 +168,9 @@ Loaders share a common base (`LoaderI`) that handles:
 - Optional language detection,
 - Text denoising,
 - Chunking into token‑size windows.
+
+Every loader returns `DocumentPage` objects (`page_content` plus a `metadata`
+dictionary), so no document-loading framework is needed to use `radlab-data`.
 
 Markdown files are read as plain text and every page is tagged with
 `document_format: markdown`. Pass the `strip_markdown` option to remove markdown markup
@@ -184,15 +208,9 @@ the dataset type.
 
 ## Command‑Line Utilities
 
-The package includes a set of entry‑points for common tasks (exposed via `setup.cfg`/`pyproject.toml`):
-
-| Command                  | Description                                                               |
-|--------------------------|---------------------------------------------------------------------------|
-| `radlab-data-preprocess` | Apply a predefined preprocessing pipeline to a raw dataset folder.        |
-| `radlab-data-convert`    | Convert JSONL to cached HuggingFace format with optional tokeniser.       |
-| `radlab-data-train-args` | Generate a JSON file with default `TrainingArguments` for `transformers`. |
-
-Run `--help` on any command to see the full list of options.
+The package currently does not ship command‑line entry points; dataset
+conversion and preprocessing are driven from Python through the classes
+described above.
 
 ---
 
@@ -202,7 +220,7 @@ All default settings live under `radlab_data/text/loaders/config.py`:
 
 ```python
 TOKENIZER_PATH = "radlab/polish-fast-tokenizer"
-AVAILABLE_FILE_EXTENSIONS = ["txt", "md", "pdf", "docx", "input_text"]
+AVAILABLE_FILE_EXTENSIONS = ["txt", "md", "pdf", "docx", "html", "input_text"]
 ```
 
 You can override these values at runtime by passing the appropriate arguments to `Document` or the loader classes.

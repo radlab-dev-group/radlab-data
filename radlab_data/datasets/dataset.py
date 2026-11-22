@@ -41,17 +41,15 @@ class DatasetBaseClass(ABC, Dataset):
         ):
             self._tokenizer.add_special_tokens(
                 {
-                    "additional_special_tokens": self._metadata[
-                        "special_token_info"
-                    ]["special_tokens"]
+                    "additional_special_tokens": self._metadata["special_token_info"][
+                        "special_tokens"
+                    ]
                 }
             )
 
         if self._label_data is not None:
             self.labels = self._label_data["names"]
-            self.id2label = {
-                int(k): v for k, v in self._label_data["id2label"].items()
-            }
+            self.id2label = {int(k): v for k, v in self._label_data["id2label"].items()}
             self.label2id = self._label_data["label2id"]
             self.num_labels = self._label_data["num_labels"]
 
@@ -282,7 +280,10 @@ class SemanticSimilarityDataset(DatasetBaseClass):
             "relation": elem["metadata"]["relation"],
         }
 
+    RANDOM_SEED = 1337
+
     def _apply_custom_preprocess_function(self, raw_data):
+        rng = np.random.default_rng(self.RANDOM_SEED)
         positive_raw_data = [x for x in raw_data if x["relation"] == "positive"]
         negative_unlabelled_raw_data = [
             x for x in raw_data if x["relation"] == "negative" and not x["label"]
@@ -309,7 +310,7 @@ class SemanticSimilarityDataset(DatasetBaseClass):
             * negative_to_positive_proportion
             * first_method_weight
         )
-        pair_indexes = np.random.choice(
+        pair_indexes = rng.choice(
             negative_count, negative_count, replace=False
         )  # we're doing it this way to maximize randomness, overflowing indices will sadly be repeats, but in case of no overflow, there will be no repetitions
         pair_indexes = pair_indexes % len(
@@ -336,13 +337,11 @@ class SemanticSimilarityDataset(DatasetBaseClass):
         negative_count = int(
             negative_count / first_method_weight * second_method_weight
         )  # inversion of the count
-        pair_indexes = np.random.choice(
-            len(positive_raw_data), negative_count, replace=True
-        )
-        negative_indexes = np.random.choice(
+        pair_indexes = rng.choice(len(positive_raw_data), negative_count, replace=True)
+        negative_indexes = rng.choice(
             len(negative_unlabelled_raw_data),
             negative_count,
-            replace=True,  # TODO make sure True is correct
+            replace=True,
         )  # subset of negatives
         for i in tqdm(
             range(negative_count),
@@ -367,9 +366,9 @@ class SemanticSimilarityDataset(DatasetBaseClass):
         # add noise to score to mimic a real dataset
         for elem in raw_data:
             if elem["relation"] == "positive":
-                elem["score"] -= abs(np.random.normal(0, score_noise_std))
+                elem["score"] -= abs(rng.normal(0, score_noise_std))
             else:
-                elem["score"] += abs(np.random.normal(0, score_noise_std))
+                elem["score"] += abs(rng.normal(0, score_noise_std))
 
         return raw_data
 
@@ -473,9 +472,7 @@ class DialogueAlternativesDataset(DatasetBaseClass):
             else:
                 break
 
-        shared_part = tokenized_endings["endings"][0]["input_ids"][
-            :shared_part_end_idx
-        ]
+        shared_part = tokenized_endings["endings"][0]["input_ids"][:shared_part_end_idx]
         for dialogue in tokenized_endings["endings"]:
             dialogue["input_ids"] = dialogue["input_ids"][shared_part_end_idx:]
         tokenized_endings["shared_part"] = shared_part

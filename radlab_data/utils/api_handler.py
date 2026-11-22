@@ -1,11 +1,27 @@
+import logging
+
 import requests
 
 from urllib.parse import urljoin
 
 
 class APIHandler:
-    def __init__(self, base_api_url, ping_check=False, debug: bool = False) -> None:
+    def __init__(
+        self,
+        base_api_url,
+        ping_check=False,
+        debug: bool = False,
+        raise_errors: bool = False,
+    ) -> None:
+        """
+        :param base_api_url: Base url of the API to call
+        :param ping_check: If set, the API is pinged when the handler is created
+        :param debug: If set, calls and responses are logged
+        :param raise_errors: If set, a failed call raises an exception instead
+        of returning None
+        """
         self._debug = debug
+        self._raise_errors = raise_errors
         self.base_api_url = base_api_url
         if ping_check:
             self.call(endpoint="/ping")
@@ -33,7 +49,7 @@ class APIHandler:
         """
         ep_url = urljoin(self.base_api_url, endpoint)
         if self._debug:
-            print("calling", ep_url)
+            logging.debug(f"Calling {ep_url}")
         try:
             method = method.upper()
             # Make the request based on the specified method
@@ -57,10 +73,11 @@ class APIHandler:
 
             # Return the JSON response
             if self._debug:
-                print("got response from", ep_url)
+                logging.debug(f"Got response from {ep_url}")
             return response.json()
 
-        except requests.RequestException as e:
-            if self._debug:
-                print("Error calling API:", e)
+        except requests.RequestException as error:
+            logging.warning(f"Error calling API {ep_url}: {error}")
+            if self._raise_errors:
+                raise
             return None

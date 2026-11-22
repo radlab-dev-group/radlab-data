@@ -1,5 +1,6 @@
 import docx
-import langchain_core
+
+from radlab_data.text.loaders.base import DocumentPage
 
 
 from radlab_data.text.loaders.loader_i import LoaderI
@@ -38,7 +39,7 @@ class DOCXLoader(LoaderI):
 
             if proper_pages:
                 if is_new_page:
-                    lgc_d = langchain_core.documents.base.Document(
+                    lgc_d = DocumentPage(
                         page_content=page_text,
                         metadata={"source": self.filepath, "page": page_number},
                     )
@@ -48,14 +49,14 @@ class DOCXLoader(LoaderI):
                     page_text += "\n" + p.text.strip()
             else:
                 page_text = p.text.strip()
-                lgc_d = langchain_core.documents.base.Document(
+                lgc_d = DocumentPage(
                     page_content=page_text,
                     metadata={"source": self.filepath, "page": page_number},
                 )
                 self.doc_pages.append(lgc_d)
         if not is_new_page and len(page_text.strip()):
             page_number += 1
-            lgc_d = langchain_core.documents.base.Document(
+            lgc_d = DocumentPage(
                 page_content=page_text,
                 metadata={"source": self.filepath, "page": page_number},
             )
@@ -71,7 +72,7 @@ class DOCXLoader(LoaderI):
                         continue
 
                     cell_text = cell.text.strip()
-                    lgc_d = langchain_core.documents.base.Document(
+                    lgc_d = DocumentPage(
                         page_content=cell_text,
                         metadata={
                             "source": self.filepath,

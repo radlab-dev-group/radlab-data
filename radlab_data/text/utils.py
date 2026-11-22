@@ -6,9 +6,6 @@ class TextUtils:
     TextUtils like sentences to text position mapping.
     """
 
-    def __int__(self):
-        pass
-
     @staticmethod
     def map_sentences_to_text(
         sentences,
