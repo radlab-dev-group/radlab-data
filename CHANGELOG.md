@@ -9,8 +9,6 @@ the last tag is the unreleased or current version. The `0.1.0` and `0.1.1`
 numbers that appeared in `setup.py` along the way were never tagged and are
 folded into `0.0.4`.
 
-## [Unreleased]
-
 ## [0.0.4] - 2026-11-22
 
 ### Changed
